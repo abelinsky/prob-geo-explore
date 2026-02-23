@@ -3,15 +3,15 @@
 #################################################################################
 
 PROJECT_NAME = prob-geo-explore
-PYTHON_VERSION = 3.10
-PYTHON_INTERPRETER = python
+PYTHON_VERSION = 3.12
+PYTHON_INTERPRETER = python3
 
 #################################################################################
 # COMMANDS                                                                      #
 #################################################################################
 
 
-## Install Python dependencies
+## Установка зависимостей
 .PHONY: requirements
 requirements:
 	$(PYTHON_INTERPRETER) -m pip install -U pip
@@ -19,8 +19,7 @@ requirements:
 	
 
 
-
-## Delete all compiled Python files
+## Удаление всех скомпилированных файлов
 .PHONY: clean
 clean:
 	find . -type f -name "*.py[co]" -delete
@@ -34,7 +33,7 @@ lint:
 	isort --check --diff prob_geo_explore
 	black --check prob_geo_explore
 
-## Format source code with black
+## Форматирование кода
 .PHONY: format
 format:
 	isort prob_geo_explore
@@ -44,7 +43,7 @@ format:
 
 
 
-## Set up Python interpreter environment
+## Создание окружения
 .PHONY: create_environment
 create_environment:
 	@bash -c "if [ ! -z `which virtualenvwrapper.sh` ]; then source `which virtualenvwrapper.sh`; mkvirtualenv $(PROJECT_NAME) --python=$(PYTHON_INTERPRETER); else mkvirtualenv.bat $(PROJECT_NAME) --python=$(PYTHON_INTERPRETER); fi"
@@ -57,13 +56,47 @@ create_environment:
 # PROJECT RULES                                                                 #
 #################################################################################
 
-
-## Make dataset
+## Разбор файлов
 .PHONY: data
 data: requirements
 	$(PYTHON_INTERPRETER) prob_geo_explore/dataset.py
 
+## Запуск Problog
+.PHONY: problog
+problog: data
+	$(PYTHON_INTERPRETER) prob_geo_explore/run_problog.py
 
+## Ранжирование блоков
+.PHONY: rank_blocks
+rank_blocks: problog
+	$(PYTHON_INTERPRETER) prob_geo_explore/rank_and_check.py
+
+## Валидация модели Problog
+.PHONY: validate_problog_model
+validate_problog_model: rank_blocks
+# validate_problog_model: requirements
+	$(PYTHON_INTERPRETER) prob_geo_explore/validate_postT0.py
+
+
+## Стохастическая оптимизация портфеля (max expected EMV)
+.PHONY: optimize_portfolio_stochastic
+optimize_portfolio_stochastic: rank_blocks
+	$(PYTHON_INTERPRETER) prob_geo_explore/optimize_portfolio.py --mode stochastic
+
+## Робастная оптимизация портфеля (max worst-case EMV)
+.PHONY: optimize_portfolio_robust
+optimize_portfolio_robust: rank_blocks
+	$(PYTHON_INTERPRETER) prob_geo_explore/optimize_portfolio.py --mode robust --out_csv data/processed/portfolio_solution_robust.csv
+
+## Визуализация стохастической оптимизации портфеля
+.PHONY: visualize_portfolio_stochastic
+visualize_portfolio_stochastic: optimize_portfolio_robust
+	$(PYTHON_INTERPRETER) prob_geo_explore/visualize_portfolio.py -m stochastic -s data/processed/portfolio_solution.csv -op fig_portfolio_stochastic
+
+## Визуализация робастной оптимизации портфеля
+.PHONY: visualize_portfolio_robust
+visualize_portfolio_robust: optimize_portfolio_robust
+	$(PYTHON_INTERPRETER) prob_geo_explore/visualize_portfolio.py -m robust -s data/processed/portfolio_solution_robust.csv -op fig_portfolio_robust
 #################################################################################
 # Self Documenting Commands                                                     #
 #################################################################################

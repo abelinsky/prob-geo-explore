@@ -1,0 +1,334 @@
+@prefix : <http://example.org/iii/ncs-exploration#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology header
+#################################################################
+
+:ncs-exploration
+    a owl:Ontology ;
+    rdfs:label "NCS Exploration Ontology (Demo TBox)"@en ;
+    rdfs:comment "Minimal TBox for probabilistic logical reasoning + exploration decision optimization on Norwegian open data (SODIR/NPD). Probabilities and inference rules live outside OWL (ProbLog/MLN/plingo/DeepProbLog)."@en .
+
+#################################################################
+# Classes (TBox)
+#################################################################
+
+### Core geo entities
+:GeoEntity a owl:Class ; rdfs:label "GeoEntity"@en .
+
+:Block a owl:Class ;
+    rdfs:subClassOf :GeoEntity ;
+    rdfs:label "Block"@en ;
+    rdfs:comment "Licensing block (decision unit in the demo)."@en .
+
+:Licence a owl:Class ;
+    rdfs:subClassOf :GeoEntity ;
+    rdfs:label "Licence"@en ;
+    rdfs:comment "Production licence / licence area."@en .
+
+:Region a owl:Class ;
+    rdfs:subClassOf :GeoEntity ;
+    rdfs:label "Region"@en ;
+    rdfs:comment "High-level region (North Sea / Norwegian Sea / Barents Sea)."@en .
+
+:Basin a owl:Class ;
+    rdfs:subClassOf :GeoEntity ;
+    rdfs:label "Basin"@en ;
+    rdfs:comment "Geological basin (optional, for contextual priors)."@en .
+
+### Wells / discoveries / fields
+:Wellbore a owl:Class ;
+    rdfs:subClassOf :GeoEntity ;
+    rdfs:label "Wellbore"@en .
+
+:Discovery a owl:Class ;
+    rdfs:subClassOf :GeoEntity ;
+    rdfs:label "Discovery"@en .
+
+:Field a owl:Class ;
+    rdfs:subClassOf :GeoEntity ;
+    rdfs:label "Field"@en ;
+    rdfs:comment "Commercial field (used for validation / EMV calibration)."@en .
+
+### Observations (raw/processed measurements)
+:Observation a owl:Class ; rdfs:label "Observation"@en .
+
+:SeismicCoverageObservation a owl:Class ;
+    rdfs:subClassOf :Observation ;
+    rdfs:label "SeismicCoverageObservation"@en .
+
+:GeochemicalObservation a owl:Class ;
+    rdfs:subClassOf :Observation ;
+    rdfs:label "GeochemicalObservation"@en .
+
+:StratLithObservation a owl:Class ;
+    rdfs:subClassOf :Observation ;
+    rdfs:label "StratLithObservation"@en .
+
+### Petroleum system evidence (qualitative concepts)
+:PetroleumSystemElement a owl:Class ;
+    rdfs:label "PetroleumSystemElement"@en ;
+    rdfs:comment "Qualitative evidence concepts used as logical predicates in the reasoning layer."@en .
+
+:SourceRockEvidence a owl:Class ;
+    rdfs:subClassOf :PetroleumSystemElement ;
+    rdfs:label "SourceRockEvidence"@en .
+
+:ReservoirEvidence a owl:Class ;
+    rdfs:subClassOf :PetroleumSystemElement ;
+    rdfs:label "ReservoirEvidence"@en .
+
+:SealEvidence a owl:Class ;
+    rdfs:subClassOf :PetroleumSystemElement ;
+    rdfs:label "SealEvidence"@en .
+
+:TrapEvidence a owl:Class ;
+    rdfs:subClassOf :PetroleumSystemElement ;
+    rdfs:label "TrapEvidence"@en .
+
+:ChargeEvidence a owl:Class ;
+    rdfs:subClassOf :PetroleumSystemElement ;
+    rdfs:label "ChargeEvidence"@en .
+
+### Exploration actions (decision variables in optimization)
+:ExplorationAction a owl:Class ;
+    rdfs:label "ExplorationAction"@en ;
+    rdfs:comment "Action types for G&G / G&G+Drilling decisions (library of works)."@en .
+
+:Reprocess2D a owl:Class ;
+    rdfs:subClassOf :ExplorationAction ;
+    rdfs:label "Reprocess2D"@en .
+
+:Seis3D a owl:Class ;
+    rdfs:subClassOf :ExplorationAction ;
+    rdfs:label "Seis3D"@en .
+
+:ExplorationWell a owl:Class ;
+    rdfs:subClassOf :ExplorationAction ;
+    rdfs:label "ExplorationWell"@en .
+
+:AppraisalWell a owl:Class ;
+    rdfs:subClassOf :ExplorationAction ;
+    rdfs:label "AppraisalWell"@en .
+
+### Planning/time (minimal)
+:TimeInstant a owl:Class ; rdfs:label "TimeInstant"@en .
+:TimePeriod a owl:Class ; rdfs:label "TimePeriod"@en .
+:Plan a owl:Class ; rdfs:label "Plan"@en .
+
+#################################################################
+# Object Properties
+#################################################################
+
+:locatedIn a owl:ObjectProperty ;
+    rdfs:label "locatedIn"@en ;
+    rdfs:comment "Spatial containment / assignment relation (e.g., Wellbore in Block; Block in Region)."@en ;
+    rdfs:domain :GeoEntity ;
+    rdfs:range :GeoEntity .
+
+:belongsToLicence a owl:ObjectProperty ;
+    rdfs:label "belongsToLicence"@en ;
+    rdfs:comment "Block belongs to a licence."@en ;
+    rdfs:domain :Block ;
+    rdfs:range :Licence .
+
+:nearTo a owl:ObjectProperty ;
+    rdfs:label "nearTo"@en ;
+    rdfs:comment "Proximity relation (used for 'near discovery/field' features)."@en ;
+    rdfs:domain :GeoEntity ;
+    rdfs:range :GeoEntity ;
+    rdf:type owl:SymmetricProperty .
+
+:hasObservation a owl:ObjectProperty ;
+    rdfs:label "hasObservation"@en ;
+    rdfs:comment "Attach observations (seismic/geochem/strat-lith) to a GeoEntity (usually a Block or Wellbore)."@en ;
+    rdfs:domain :GeoEntity ;
+    rdfs:range :Observation .
+
+:hasEvidence a owl:ObjectProperty ;
+    rdfs:label "hasEvidence"@en ;
+    rdfs:comment "Attach qualitative petroleum system evidence to a Block."@en ;
+    rdfs:domain :Block ;
+    rdfs:range :PetroleumSystemElement .
+
+:discoveredBy a owl:ObjectProperty ;
+    rdfs:label "discoveredBy"@en ;
+    rdfs:comment "Discovery discovered by a wellbore."@en ;
+    rdfs:domain :Discovery ;
+    rdfs:range :Wellbore .
+
+:partOfField a owl:ObjectProperty ;
+    rdfs:label "partOfField"@en ;
+    rdfs:comment "Discovery incorporated into a commercial field."@en ;
+    rdfs:domain :Discovery ;
+    rdfs:range :Field .
+
+:applicableTo a owl:ObjectProperty ;
+    rdfs:label "applicableTo"@en ;
+    rdfs:comment "Action is applicable to a given Block (used to record admissible actions set A(B))."@en ;
+    rdfs:domain :ExplorationAction ;
+    rdfs:range :Block .
+
+:precedesAction a owl:ObjectProperty ;
+    rdfs:label "precedesAction"@en ;
+    rdfs:comment "Generic precedence between action types (e.g., Seis3D precedes ExplorationWell)."@en ;
+    rdfs:domain :ExplorationAction ;
+    rdfs:range :ExplorationAction ;
+    rdf:type owl:TransitiveProperty .
+
+:validDuring a owl:ObjectProperty ;
+    rdfs:label "validDuring"@en ;
+    rdfs:comment "Licence validity interval / assignment to a period."@en ;
+    rdfs:domain :Licence ;
+    rdfs:range :TimePeriod .
+
+:hasPlan a owl:ObjectProperty ;
+    rdfs:label "hasPlan"@en ;
+    rdfs:domain :Licence ;
+    rdfs:range :Plan .
+
+:hasPlannedAction a owl:ObjectProperty ;
+    rdfs:label "hasPlannedAction"@en ;
+    rdfs:domain :Plan ;
+    rdfs:range :ExplorationAction .
+
+:scheduledIn a owl:ObjectProperty ;
+    rdfs:label "scheduledIn"@en ;
+    rdfs:comment "Assign a planned action to a time period (high-level planning hook; detailed scheduling is done in optimization layer)."@en ;
+    rdfs:domain :ExplorationAction ;
+    rdfs:range :TimePeriod .
+
+#################################################################
+# Data Properties
+#################################################################
+
+### identifiers
+:npdid a owl:DatatypeProperty ;
+    rdfs:label "npdid"@en ;
+    rdfs:comment "Numeric identifier from SODIR/NPD where available."@en ;
+    rdfs:domain :GeoEntity ;
+    rdfs:range xsd:integer .
+
+:name a owl:DatatypeProperty ;
+    rdfs:label "name"@en ;
+    rdfs:domain :GeoEntity ;
+    rdfs:range xsd:string .
+
+### well / discovery / field attributes
+:completionYear a owl:DatatypeProperty ;
+    rdfs:label "completionYear"@en ;
+    rdfs:domain :Wellbore ;
+    rdfs:range xsd:gYear .
+
+:discoveryYear a owl:DatatypeProperty ;
+    rdfs:label "discoveryYear"@en ;
+    rdfs:domain :Discovery ;
+    rdfs:range xsd:gYear .
+
+:wellResult a owl:DatatypeProperty ;
+    rdfs:label "wellResult"@en ;
+    rdfs:comment "Textual result label (dry/oil/gas/etc.). Prefer mapping to controlled vocab in reasoning layer."@en ;
+    rdfs:domain :Wellbore ;
+    rdfs:range xsd:string .
+
+### block-level study / coverage features
+:seismicCoverageRatio a owl:DatatypeProperty ;
+    rdfs:label "seismicCoverageRatio"@en ;
+    rdfs:comment "0..1 ratio of block area covered by relevant seismic surveys (e.g., finished 3D coverage)."@en ;
+    rdfs:domain :Block ;
+    rdfs:range xsd:decimal .
+
+:wellCount a owl:DatatypeProperty ;
+    rdfs:label "wellCount"@en ;
+    rdfs:domain :Block ;
+    rdfs:range xsd:integer .
+
+:dryWellCount a owl:DatatypeProperty ;
+    rdfs:label "dryWellCount"@en ;
+    rdfs:domain :Block ;
+    rdfs:range xsd:integer .
+
+### action attributes (used by optimization layer as parameters)
+:cost a owl:DatatypeProperty ;
+    rdfs:label "cost"@en ;
+    rdfs:comment "Nominal cost of an action (units to be defined in the experiment)."@en ;
+    rdfs:domain :ExplorationAction ;
+    rdfs:range xsd:decimal .
+
+:duration a owl:DatatypeProperty ;
+    rdfs:label "duration"@en ;
+    rdfs:comment "Duration of an action in discrete planning periods."@en ;
+    rdfs:domain :ExplorationAction ;
+    rdfs:range xsd:integer .
+
+:resourceUnits a owl:DatatypeProperty ;
+    rdfs:label "resourceUnits"@en ;
+    rdfs:comment "Generic resource usage (e.g., rig slots, crew units) per period or total, depending on model."@en ;
+    rdfs:domain :ExplorationAction ;
+    rdfs:range xsd:integer .
+
+#################################################################
+# Minimal class restrictions (lightweight axioms)
+#################################################################
+
+# Wellbore must be located in a Block (at least one)
+:Wellbore rdfs:subClassOf [
+    a owl:Restriction ;
+    owl:onProperty :locatedIn ;
+    owl:someValuesFrom :Block
+] .
+
+# Discovery must be located in a Block (at least one)
+:Discovery rdfs:subClassOf [
+    a owl:Restriction ;
+    owl:onProperty :locatedIn ;
+    owl:someValuesFrom :Block
+] .
+
+# Block must be located in a Region (at least one)
+:Block rdfs:subClassOf [
+    a owl:Restriction ;
+    owl:onProperty :locatedIn ;
+    owl:someValuesFrom :Region
+] .
+
+# Discovery is discovered by some Wellbore (optional but useful)
+:Discovery rdfs:subClassOf [
+    a owl:Restriction ;
+    owl:onProperty :discoveredBy ;
+    owl:someValuesFrom :Wellbore
+] .
+
+#################################################################
+# Optional: demo individuals (can be removed)
+#################################################################
+
+:NorthSea a owl:NamedIndividual , :Region ;
+    :name "North Sea"^^xsd:string .
+
+:Block_25_6 a owl:NamedIndividual , :Block ;
+    :name "25/6"^^xsd:string ;
+    :locatedIn :NorthSea ;
+    :seismicCoverageRatio "0.00"^^xsd:decimal ;
+    :wellCount 0 ;
+    :dryWellCount 0 .
+
+# Generic precedence between action types (library-level)
+:Seis3D_Type a owl:NamedIndividual , :Seis3D ; :name "Seis3D (type)"^^xsd:string .
+:Reprocess2D_Type a owl:NamedIndividual , :Reprocess2D ; :name "Reprocess2D (type)"^^xsd:string .
+:ExplWell_Type a owl:NamedIndividual , :ExplorationWell ; :name "ExplorationWell (type)"^^xsd:string .
+:AppWell_Type a owl:NamedIndividual , :AppraisalWell ; :name "AppraisalWell (type)"^^xsd:string .
+
+:Reprocess2D_Type :precedesAction :ExplWell_Type .
+:Seis3D_Type :precedesAction :ExplWell_Type .
+:ExplWell_Type :precedesAction :AppWell_Type .
+
+# Nominal demo costs/durations (edit for your experiment)
+:Reprocess2D_Type :cost "5.0"^^xsd:decimal ; :duration 1 ; :resourceUnits 0 .
+:Seis3D_Type      :cost "50.0"^^xsd:decimal ; :duration 1 ; :resourceUnits 0 .
+:ExplWell_Type    :cost "80.0"^^xsd:decimal ; :duration 1 ; :resourceUnits 1 .
+:AppWell_Type     :cost "70.0"^^xsd:decimal ; :duration 1 ; :resourceUnits 1 .
