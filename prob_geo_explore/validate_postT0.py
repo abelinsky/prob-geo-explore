@@ -293,6 +293,18 @@ def main(
         "-o",
         help="Путь до файла, куда будет записан результат",
     ),
+    fig1: Path = typer.Option(
+        PROCESSED_DATA_DIR / "fig_postT0_lift_curve.png",
+        "--fig1",
+        "-f1",
+        help="Путь до файла, куда будет записана диаграмма lift_curve",
+    ),
+    fig2: Path = typer.Option(
+        PROCESSED_DATA_DIR / "fig_postT0_reliability.png",
+        "--fig2",
+        "-f2",
+        help="Путь до файла, куда будет записана диаграмма reliability",
+    ),
 ):
     logger.info("Валидация модели...")
 
@@ -372,8 +384,8 @@ def main(
     plt.ylabel("Кумулятивный уровень post-T0 обнаружения")
     plt.title("Out-of-sample Lift Curve (post-T0 discoveries)")
     plt.tight_layout()
-    plt.savefig("fig_postT0_lift_curve.png", dpi=300)
-    plt.show()
+    plt.savefig(fig1, dpi=300)
+    # plt.show()
 
     # 2) Calibration-style plot (binning)
     bins = 10
@@ -396,12 +408,10 @@ def main(
     plt.ylabel("Набладаемая post-T0 уровнь")
     plt.title("Reliability Diagram (post-T0)")
     plt.tight_layout()
-    plt.savefig("fig_postT0_reliability.png", dpi=300)
-    plt.show()
+    plt.savefig(fig2, dpi=300)
+    # plt.show()
 
-    print(
-        "Saved figures: fig_postT0_lift_curve.png, fig_postT0_reliability.png"
-    )
+    logger.info(f"Сохранены диаграммы: {fig1}, {fig2}")
 
 
 if __name__ == "__main__":

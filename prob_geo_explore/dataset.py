@@ -151,6 +151,13 @@ def slug_block_name(x: str) -> str:
     return s.lower()
 
 
+def slug(x):
+    s = str(x).strip().replace(" ", "").replace("/", "_").replace("-", "_")
+    if not s.lower().startswith("b"):
+        s = "b" + s
+    return s.lower()
+
+
 def haversine_km(lon1, lat1, lon2, lat2) -> np.ndarray:
     """Vectorized haversine distance in km between (lon1,lat1) and (lon2,lat2)."""
     R = 6371.0
@@ -983,6 +990,75 @@ def build_features(
     return features
 
 
+def write_derived_facts(block_features_path: str, out_derived_facts: str):
+    df = pd.read_csv(block_features_path)
+    df["block_id"] = df["block_id"].apply(slug)
+
+    # safe numeric getters
+    def num(col, default=0.0):
+        return (
+            pd.to_numeric(df[col], errors="coerce").fillna(default)
+            if col in df.columns
+            else pd.Series(default, index=df.index)
+        )
+
+    dist = num("dist_to_nearest_field_km", np.nan)
+    wdepth = num("water_depth_p50", np.nan)
+    wells = num("well_count", 0)
+    dry = num("dry_well_count", 0)
+    expl = num("exploration_like_count", 0)
+
+    near = num("near_field", 0).astype(int)
+    deep = num("deepwater_penalty", 0).astype(int)
+
+    lines = []
+    lines.append("% ===== derived facts (no seismic) =====")
+
+    for i, r in df.iterrows():
+        b = r["block_id"]
+
+        # proximity
+        if not np.isnan(dist.iloc[i]):
+            if dist.iloc[i] < 5:
+                lines.append(f"very_close_to_field({b}).")
+            if dist.iloc[i] < 20:
+                lines.append(f"close_to_field({b}).")
+            if dist.iloc[i] < 50:
+                lines.append(f"near_to_field({b}).")
+
+        # wells
+        if wells.iloc[i] >= 5:
+            lines.append(f"many_wells({b}).")
+        if wells.iloc[i] < 2:
+            lines.append(f"few_wells({b}).")
+        if dry.iloc[i] >= 3:
+            lines.append(f"many_dry_wells({b}).")
+
+        # exploration activity
+        if expl.iloc[i] >= 3:
+            lines.append(f"active_area({b}).")
+
+        # water depth
+        if not np.isnan(wdepth.iloc[i]):
+            if wdepth.iloc[i] < 200:
+                lines.append(f"shallow_water({b}).")
+            if wdepth.iloc[i] > 500:
+                lines.append(f"deep_water({b}).")
+
+        # simple booleans
+        if near.iloc[i] == 1:
+            lines.append(f"near_field({b}).")
+        if deep.iloc[i] == 1:
+            lines.append(f"deepwater_penalty({b}).")
+
+    with open(out_derived_facts, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+
+    logger.info(
+        f"Записаны derived_facts {out_derived_facts}, всего записей: {len(lines)}",
+    )
+
+
 @app.command()
 def main(
     ld: Path = typer.Option(
@@ -1061,6 +1137,12 @@ def main(
         "-f",
         help="Путь до файла, куда будут записаны факты Prolog/ProbLog",
     ),
+    derived_facts_noseis: Path = typer.Option(
+        PROCESSED_DATA_DIR / "derived_facts_noseis.pl",
+        "--derived_facts_noseis",
+        "-df",
+        help="Путь до файла, куда будут записаны derived_facts_noseis",
+    ),
 ):
     logger.info("Скачивание данных: https://factpages.sodir.no...")
     logger.info(f"Поиск данных данных в {PROCESSED_DATA_DIR}...")
@@ -1099,6 +1181,8 @@ def main(
     if present:
         logger.info("\nПроверка (средние значения):")
         logger.info(features[present].mean(numeric_only=True))
+
+    write_derived_facts(str(out_path), str(derived_facts_noseis))
 
     logger.success(f"Обработка данных завершена {RAW_DATA_DIR}")
     # -----------------------------------------

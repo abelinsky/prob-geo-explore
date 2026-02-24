@@ -234,9 +234,11 @@ def main(
             f.write(f"TOTAL COST (MUSD): {total_cost:.1f}\n")
             f.write(f"TOTAL EXPECTED EMV (MUSD): {total_emv:.1f}\n")
 
-        print(f"OK: wrote {out_csv}, {out_txt}")
-        print(
-            f"Chosen={len(chosen)}, cost={total_cost:.1f}, expected EMV={total_emv:.1f}"
+        logger.info(
+            f"Результаты стохастической оптимизации: {out_csv}, {out_txt}"
+        )
+        logger.info(
+            f"Выбрано={len(chosen)}, стоимость={total_cost:.1f}, ожидаемый EMV={total_emv:.1f}"
         )
 
     else:
@@ -257,9 +259,9 @@ def main(
             f.write(f"TOTAL COST (MUSD): {total_cost:.1f}\n")
             f.write(f"TOTAL WORST-CASE EMV (MUSD): {total_emv_low:.1f}\n")
 
-        print(f"OK: wrote {out_csv}, {out_txt}")
+        print(f"Результаты робастной оптимизации: {out_csv}, {out_txt}")
         print(
-            f"Chosen={len(chosen)}, cost={total_cost:.1f}, worst-case EMV={total_emv_low:.1f}"
+            f"Выбрано={len(chosen)}, стоимость={total_cost:.1f}, пессимистический EMV={total_emv_low:.1f}"
         )
 
     if frontier:

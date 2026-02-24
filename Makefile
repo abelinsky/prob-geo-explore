@@ -77,26 +77,42 @@ validate_problog_model: rank_blocks
 # validate_problog_model: requirements
 	$(PYTHON_INTERPRETER) prob_geo_explore/validate_postT0.py
 
-
 ## Стохастическая оптимизация портфеля (max expected EMV)
 .PHONY: optimize_portfolio_stochastic
-optimize_portfolio_stochastic: rank_blocks
+optimize_portfolio_stochastic: validate_problog_model
 	$(PYTHON_INTERPRETER) prob_geo_explore/optimize_portfolio.py --mode stochastic
 
 ## Робастная оптимизация портфеля (max worst-case EMV)
 .PHONY: optimize_portfolio_robust
-optimize_portfolio_robust: rank_blocks
+optimize_portfolio_robust: validate_problog_model
 	$(PYTHON_INTERPRETER) prob_geo_explore/optimize_portfolio.py --mode robust --out_csv data/processed/portfolio_solution_robust.csv
 
 ## Визуализация стохастической оптимизации портфеля
 .PHONY: visualize_portfolio_stochastic
-visualize_portfolio_stochastic: optimize_portfolio_robust
+visualize_portfolio_stochastic: optimize_portfolio_stochastic
 	$(PYTHON_INTERPRETER) prob_geo_explore/visualize_portfolio.py -m stochastic -s data/processed/portfolio_solution.csv -op fig_portfolio_stochastic
 
 ## Визуализация робастной оптимизации портфеля
 .PHONY: visualize_portfolio_robust
 visualize_portfolio_robust: optimize_portfolio_robust
 	$(PYTHON_INTERPRETER) prob_geo_explore/visualize_portfolio.py -m robust -s data/processed/portfolio_solution_robust.csv -op fig_portfolio_robust
+
+
+## Обучение Markov Logic Network
+.PHONY: train_mln
+train_mln: validate_problog_model
+	$(PYTHON_INTERPRETER) prob_geo_explore/train_mln.py
+
+## Сравнение Markov Logic Network и Problog
+.PHONY: compare_problog_mln
+compare_problog_mln: train_mln
+	$(PYTHON_INTERPRETER) prob_geo_explore/compare_problog_mln.py
+
+## Вывод plingo
+.PHONY: plingo
+plingo: validate_problog_model
+	$(PYTHON_INTERPRETER) prob_geo_explore/plingo.py
+
 #################################################################################
 # Self Documenting Commands                                                     #
 #################################################################################

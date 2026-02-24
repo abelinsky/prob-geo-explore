@@ -15,4 +15,7 @@ scipy
 problog
 matplotlib
 pyomo
+scikit-learn
+clingo
+plingo
 -e .

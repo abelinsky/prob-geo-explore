@@ -46,7 +46,7 @@ def main(
         help="Путь до файла с ABox (онтологическими фактами)",
     ),
     derived_path: Path = typer.Option(
-        PROJ_ROOT / "ontology/derived_facts.pl",
+        PROCESSED_DATA_DIR / "derived_facts_noseis.pl",
         "--derived",
         "-d",
         exists=True,
@@ -65,10 +65,22 @@ def main(
         "-o",
         help="Путь до файла, куда будет записан результат",
     ),
+    use_previous: bool = typer.Option(
+        True,
+        "--use_previous",
+        "-u",
+        help="Использовать ранее полученный результат (файл `out_path`)",
+    ),
 ):
+    if use_previous and out_path.exists():
+        logger.success(
+            f"Использую ранее выведенный результат Problog: {out_path}..."
+        )
+        return
+
     logger.info("Запуск problog...")
 
-    blocks = extract_blocks_from_facts(facts_path)
+    blocks = extract_blocks_from_facts(str(facts_path))
     if not blocks:
         raise RuntimeError("No block(...) facts found in facts_blocks.pl")
 
@@ -88,7 +100,6 @@ def main(
             w.write(f"query(commercial_success_pred({b})).\n")
 
     logger.info(f"Подготовлен Problog-файл: {combined_path}...")
-
     logger.info("Вывод Problog...")
 
     model = PrologFile(combined_path)
