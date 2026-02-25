@@ -67,51 +67,50 @@ problog: data
 	$(PYTHON_INTERPRETER) prob_geo_explore/run_problog.py
 
 ## Ранжирование блоков
-.PHONY: rank_blocks
-rank_blocks: problog
+.PHONY: rank_blocks_by_problog
+rank_blocks_by_problog: problog
 	$(PYTHON_INTERPRETER) prob_geo_explore/rank_and_check.py
 
-## Валидация модели Problog
-.PHONY: validate_problog_model
-validate_problog_model: rank_blocks
-# validate_problog_model: requirements
-	$(PYTHON_INTERPRETER) prob_geo_explore/validate_postT0.py
+## Обучение Markov Logic Network
+.PHONY: rank_blocks_by_mln
+rank_blocks_by_mln: rank_blocks_by_problog
+	$(PYTHON_INTERPRETER) prob_geo_explore/train_mln.py
+
+## Вывод plingo
+.PHONY: rank_blocks_by_plingo
+rank_blocks_by_plingo: rank_blocks_by_problog
+	$(PYTHON_INTERPRETER) prob_geo_explore/plingo.py
+
+## Вывод plingo
+.PHONY: evaluate_post_T0
+evaluate_post_T0: rank_blocks_by_mln rank_blocks_by_plingo
+	$(PYTHON_INTERPRETER) prob_geo_explore/evaluate_post_T0.py
+
+
+## Сравнение Markov Logic Network и Problog
+.PHONY: compare_problog_mln
+compare_problog_mln_plingo: evaluate_post_T0
+	$(PYTHON_INTERPRETER) prob_geo_explore/compare_problog_mln.py
 
 ## Стохастическая оптимизация портфеля (max expected EMV)
 .PHONY: optimize_portfolio_stochastic
-optimize_portfolio_stochastic: validate_problog_model
+optimize_portfolio_stochastic: compare_problog_mln_plingo
 	$(PYTHON_INTERPRETER) prob_geo_explore/optimize_portfolio.py --mode stochastic
 
 ## Робастная оптимизация портфеля (max worst-case EMV)
 .PHONY: optimize_portfolio_robust
-optimize_portfolio_robust: validate_problog_model
-	$(PYTHON_INTERPRETER) prob_geo_explore/optimize_portfolio.py --mode robust --out_csv data/processed/portfolio_solution_robust.csv
+optimize_portfolio_robust: compare_problog_mln_plingo
+	$(PYTHON_INTERPRETER) prob_geo_explore/optimize_portfolio.py --mode robust 
 
-## Визуализация стохастической оптимизации портфеля
-.PHONY: visualize_portfolio_stochastic
-visualize_portfolio_stochastic: optimize_portfolio_stochastic
-	$(PYTHON_INTERPRETER) prob_geo_explore/visualize_portfolio.py -m stochastic -s data/processed/portfolio_solution.csv -op fig_portfolio_stochastic
+## Визуализация портфельной оптимизации
+.PHONY: visualize_portfolios
+visualize_portfolios: optimize_portfolio_stochastic optimize_portfolio_robust
+	$(PYTHON_INTERPRETER) prob_geo_explore/visualize_portfolios.py 
 
-## Визуализация робастной оптимизации портфеля
-.PHONY: visualize_portfolio_robust
-visualize_portfolio_robust: optimize_portfolio_robust
-	$(PYTHON_INTERPRETER) prob_geo_explore/visualize_portfolio.py -m robust -s data/processed/portfolio_solution_robust.csv -op fig_portfolio_robust
+## Запуск всего пайплайна
+.PHONY: run_all
+run_all: visualize_portfolios
 
-
-## Обучение Markov Logic Network
-.PHONY: train_mln
-train_mln: validate_problog_model
-	$(PYTHON_INTERPRETER) prob_geo_explore/train_mln.py
-
-## Сравнение Markov Logic Network и Problog
-.PHONY: compare_problog_mln
-compare_problog_mln: train_mln
-	$(PYTHON_INTERPRETER) prob_geo_explore/compare_problog_mln.py
-
-## Вывод plingo
-.PHONY: plingo
-plingo: validate_problog_model
-	$(PYTHON_INTERPRETER) prob_geo_explore/plingo.py
 
 #################################################################################
 # Self Documenting Commands                                                     #

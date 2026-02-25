@@ -18,21 +18,22 @@
 #defined shallow_water/1.
 
 % --- Positive evidence ---
-success(B) :- very_close_to_field(B), &weight("2.5").
-success(B) :- close_to_field(B),      &weight("1.2").
-success(B) :- near_to_field(B),       &weight("0.6").
+% scale factor (ручной "temperature")
+success(B) :- very_close_to_field(B), &weight("0.8").     
+success(B) :- close_to_field(B),      &weight("0.4").     
+success(B) :- near_to_field(B),       &weight("0.2").     
 
-success(B) :- near_field(B),          &weight("0.8").
-success(B) :- active_area(B),         &weight("0.8").
-success(B) :- many_wells(B),          &weight("0.6").
+success(B) :- near_field(B),          &weight("0.25").    
+success(B) :- active_area(B),         &weight("0.25").    
+success(B) :- many_wells(B),          &weight("0.20").    
 
-% frontier prior: few wells is not negative
-success(B) :- few_wells(B),           &weight("0.4").
+success(B) :- few_wells(B),           &weight("0.10").    
 
-% --- Negative evidence ---
-success(B) :- many_dry_wells(B),      &weight("-2.0").
-success(B) :- deep_water(B),          &weight("-1.0").
-success(B) :- deepwater_penalty(B),   &weight("-0.6").
+success(B) :- many_dry_wells(B),      &weight("-0.60").   
+success(B) :- deep_water(B),          &weight("-0.30").   
+success(B) :- deepwater_penalty(B),   &weight("-0.18").   
 
-% Optional: shallow water small plus
-success(B) :- shallow_water(B),       &weight("0.3").
+success(B) :- shallow_water(B),       &weight("0.10").    
+
+% Базовый “анти-приор” (регуляризация в сторону малых вероятностей)
+success(B) :- block(B), &weight("-1.2").

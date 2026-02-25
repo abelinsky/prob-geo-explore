@@ -19,7 +19,6 @@ Goal:
 Outputs:
 - block_ranked_postT0_eval.csv (merged table)
 - Prints Top-K hit rates and AUC (if sklearn available)
-- Saves a couple of validation plots (matplotlib, no colors specified)
 """
 
 from loguru import logger
@@ -32,8 +31,6 @@ import pandas as pd
 
 import geopandas as gpd
 from shapely.geometry import Point
-
-import matplotlib.pyplot as plt
 
 from prob_geo_explore.config import PROCESSED_DATA_DIR, RAW_DATA_DIR
 
@@ -86,7 +83,7 @@ def read_geo(path: str) -> gpd.GeoDataFrame:
         gdf = gpd.read_file(p.as_posix())
     if gdf.crs is None:
         gdf = gdf.set_crs(epsg=WGS84)
-    if gdf.crs.to_epsg() != WGS84:
+    elif gdf.crs.to_epsg() != WGS84:
         gdf = gdf.to_crs(epsg=WGS84)
     return gdf
 
@@ -246,7 +243,7 @@ def main(
         "--ranked",
         "-r",
         exists=True,
-        help="Путь до файла block_ranked.csv (block_id, p_success)",
+        help="Путь до файла block_ranked (block_id, p_success)",
     ),
     discovery_path: Path = typer.Option(
         RAW_DATA_DIR / "discovery.csv",
@@ -293,18 +290,18 @@ def main(
         "-o",
         help="Путь до файла, куда будет записан результат",
     ),
-    fig1: Path = typer.Option(
-        PROCESSED_DATA_DIR / "fig_postT0_lift_curve.png",
-        "--fig1",
-        "-f1",
-        help="Путь до файла, куда будет записана диаграмма lift_curve",
-    ),
-    fig2: Path = typer.Option(
-        PROCESSED_DATA_DIR / "fig_postT0_reliability.png",
-        "--fig2",
-        "-f2",
-        help="Путь до файла, куда будет записана диаграмма reliability",
-    ),
+    # fig1: Path = typer.Option(
+    #     PROCESSED_DATA_DIR / "fig_postT0_lift_curve.png",
+    #     "--fig1",
+    #     "-f1",
+    #     help="Путь до файла, куда будет записана диаграмма lift_curve",
+    # ),
+    # fig2: Path = typer.Option(
+    #     PROCESSED_DATA_DIR / "fig_postT0_reliability.png",
+    #     "--fig2",
+    #     "-f2",
+    #     help="Путь до файла, куда будет записана диаграмма reliability",
+    # ),
 ):
     logger.info("Валидация модели...")
 
@@ -313,14 +310,14 @@ def main(
     ranked = pd.read_csv(ranked_path)
     if "block_id" not in ranked.columns or "p_success" not in ranked.columns:
         raise ValueError(
-            "ranked file must contain block_id and p_success columns"
+            "ranked file должен содержать столбцы block_id и p_success"
         )
 
-    blocks = load_blocks(blocks_path)
-    wells = load_wells(wellbore_path)
+    blocks = load_blocks(blocks_path)  # type: ignore
+    wells = load_wells(wellbore_path)  # type: ignore
 
     truth = build_postT0_truth(
-        discovery_csv=discovery_path,
+        discovery_csv=discovery_path,  # type: ignore
         wells_gdf=wells,
         blocks_gdf=blocks,
         t0_year=t0_year,
@@ -345,13 +342,25 @@ def main(
     base_rate = float(y.mean())
     auc = auc_if_possible(y, p)
 
-    print(f"T0 year: {t0_year}")
-    print(f"Blocks: {len(merged)}")
-    print(f"Post-T0 discovery blocks rate (base): {base_rate:.4f}")
+    logger.info(
+        f"""T0 year: {t0_year}
+    Blocks: {len(merged)}
+    Post-T0 discovery blocks rate (base): {base_rate:.4f}
+"""
+    )
+
+    # # Сохранение артефакта
+    # truth_out = PROCESSED_DATA_DIR / "block_truth_postT0.csv"
+    # merged[["block_id", "y_postT0", "n_discoveries_postT0"]].to_csv(
+    #     truth_out, index=False
+    # )
+    # logger.info(f"Сохранено post-T0 в {truth_out}")
+
+    # визуализация
     if auc is not None:
-        print(f"ROC-AUC: {auc:.4f}")
+        logger.info(f"ROC-AUC: {auc:.4f}")
     else:
-        print("ROC-AUC: (install scikit-learn to compute)")
+        logger.info("ROC-AUC: (install scikit-learn to compute)")
 
     for k in [20, 50, 100, 200, 300]:
         if k <= len(merged):
@@ -361,57 +370,59 @@ def main(
                 .mean()
             )
             lift = (topk_rate / base_rate) if base_rate > 0 else np.nan
-            print(f"Top-{k}: postT0 hit rate={topk_rate:.4f}, lift={lift:.2f}")
+            logger.info(
+                f"Top-{k}: postT0 hit rate={topk_rate:.4f}, lift={lift:.2f}"
+            )
 
     # Save merged
     merged.to_csv(out, index=False, encoding="utf-8")
-    print(f"OK: wrote {out}")
+    logger.success(f"Записаны сведения об открытиях после T0 {out}")
 
     # Plots (publication-friendly)
-    merged_sorted = merged.sort_values(
-        "p_success", ascending=False
-    ).reset_index(drop=True)
+    # merged_sorted = merged.sort_values(
+    #     "p_success", ascending=False
+    # ).reset_index(drop=True)
 
-    # 1) Lift curve on post-T0 truth
-    merged_sorted["cum_hits"] = merged_sorted["y_postT0"].cumsum()
-    merged_sorted["cum_rate"] = merged_sorted["cum_hits"] / (
-        merged_sorted.index + 1
-    )
+    # # 1) Lift curve on post-T0 truth
+    # merged_sorted["cum_hits"] = merged_sorted["y_postT0"].cumsum()
+    # merged_sorted["cum_rate"] = merged_sorted["cum_hits"] / (
+    #     merged_sorted.index + 1
+    # )
 
-    plt.figure()
-    plt.plot(merged_sorted.index + 1, merged_sorted["cum_rate"])
-    plt.xlabel("Топ-K блоков (прогнозная вероятность)")
-    plt.ylabel("Кумулятивный уровень post-T0 обнаружения")
-    plt.title("Out-of-sample Lift Curve (post-T0 discoveries)")
-    plt.tight_layout()
-    plt.savefig(fig1, dpi=300)
-    # plt.show()
+    # plt.figure()
+    # plt.plot(merged_sorted.index + 1, merged_sorted["cum_rate"])
+    # plt.xlabel("Топ-K блоков (прогнозная вероятность)")
+    # plt.ylabel("Кумулятивный уровень post-T0 обнаружения")
+    # plt.title("Out-of-sample Lift Curve (post-T0 discoveries)")
+    # plt.tight_layout()
+    # plt.savefig(fig1, dpi=300)
+    # # plt.show()
 
-    # 2) Calibration-style plot (binning)
-    bins = 10
-    merged_sorted["bin"] = pd.qcut(
-        merged_sorted["p_success"], q=bins, duplicates="drop"
-    )
-    calib = (
-        merged_sorted.groupby("bin")
-        .agg(
-            p_mean=("p_success", "mean"),
-            y_rate=("y_postT0", "mean"),
-            n=("y_postT0", "size"),
-        )
-        .reset_index()
-    )
+    # # 2) Calibration-style plot (binning)
+    # bins = 10
+    # merged_sorted["bin"] = pd.qcut(
+    #     merged_sorted["p_success"], q=bins, duplicates="drop"
+    # )
+    # calib = (
+    #     merged_sorted.groupby("bin")
+    #     .agg(
+    #         p_mean=("p_success", "mean"),
+    #         y_rate=("y_postT0", "mean"),
+    #         n=("y_postT0", "size"),
+    #     )
+    #     .reset_index()
+    # )
 
-    plt.figure()
-    plt.plot(calib["p_mean"], calib["y_rate"], marker="o")
-    plt.xlabel("Средняя прогнозируемая вероятность")
-    plt.ylabel("Набладаемая post-T0 уровнь")
-    plt.title("Reliability Diagram (post-T0)")
-    plt.tight_layout()
-    plt.savefig(fig2, dpi=300)
-    # plt.show()
+    # plt.figure()
+    # plt.plot(calib["p_mean"], calib["y_rate"], marker="o")
+    # plt.xlabel("Средняя прогнозируемая вероятность")
+    # plt.ylabel("Набладаемая post-T0 уровнь")
+    # plt.title("Reliability Diagram (post-T0)")
+    # plt.tight_layout()
+    # plt.savefig(fig2, dpi=300)
+    # # plt.show()
 
-    logger.info(f"Сохранены диаграммы: {fig1}, {fig2}")
+    # logger.info(f"Сохранены диаграммы: {fig1}, {fig2}")
 
 
 if __name__ == "__main__":

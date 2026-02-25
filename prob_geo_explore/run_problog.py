@@ -66,14 +66,14 @@ def main(
         help="Путь до файла, куда будет записан результат",
     ),
     use_previous: bool = typer.Option(
-        True,
+        False,
         "--use_previous",
         "-u",
         help="Использовать ранее полученный результат (файл `out_path`)",
     ),
 ):
     if use_previous and out_path.exists():
-        logger.success(
+        logger.warning(
             f"Использую ранее выведенный результат Problog: {out_path}..."
         )
         return

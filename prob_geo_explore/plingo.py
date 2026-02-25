@@ -54,36 +54,36 @@ def generate_asp_evidence(block_features_path: Path, out_path: Path):
         lines.append(f"block({b}).")
 
         # proximity
-        if not np.isnan(dist.iloc[i]):
-            if dist.iloc[i] < 5:
+        if not np.isnan(dist.iloc[i]):  # type: ignore
+            if dist.iloc[i] < 5:  # type: ignore
                 lines.append(f"very_close_to_field({b}).")
-            if dist.iloc[i] < 20:
+            if dist.iloc[i] < 20:  # type: ignore
                 lines.append(f"close_to_field({b}).")
-            if dist.iloc[i] < 50:
+            if dist.iloc[i] < 50:  # type: ignore
                 lines.append(f"near_to_field({b}).")
 
         # wells
-        if wells.iloc[i] >= 5:
+        if wells.iloc[i] >= 5:  # type: ignore
             lines.append(f"many_wells({b}).")
-        if wells.iloc[i] < 2:
+        if wells.iloc[i] < 2:  # type: ignore
             lines.append(f"few_wells({b}).")
-        if dry.iloc[i] >= 3:
+        if dry.iloc[i] >= 3:  # type: ignore
             lines.append(f"many_dry_wells({b}).")
 
         # exploration activity
-        if expl.iloc[i] >= 3:
+        if expl.iloc[i] >= 3:  # type: ignore
             lines.append(f"active_area({b}).")
 
         # water depth
-        if not np.isnan(wdepth.iloc[i]):
-            if wdepth.iloc[i] < 200:
+        if not np.isnan(wdepth.iloc[i]):  # type: ignore
+            if wdepth.iloc[i] < 200:  # type: ignore
                 lines.append(f"shallow_water({b}).")
-            if wdepth.iloc[i] > 500:
+            if wdepth.iloc[i] > 500:  # type: ignore
                 lines.append(f"deep_water({b}).")
 
-        if near.iloc[i] == 1:
+        if near.iloc[i] == 1:  # type: ignore
             lines.append(f"near_field({b}).")
-        if deep.iloc[i] == 1:
+        if deep.iloc[i] == 1:  # type: ignore
             lines.append(f"deepwater_penalty({b}).")
 
         lines.append("")
@@ -184,7 +184,7 @@ def load_evidence_by_block(path: str):
                 continue
             m2 = pred_pat.match(ln)
             if m2:
-                pred = m2.group(1)
+                m2.group(1)
                 arg = m2.group(2).strip().lower()
                 # только если это факт про конкретный block-id
                 if arg in by_block:
@@ -297,7 +297,19 @@ def main(
         "-op",
         help="Путь до файла, куда будет записан block_ranked_plingo.csv",
     ),
+    use_previous: bool = typer.Option(
+        False,
+        "--use_previous",
+        "-u",
+        help="Использовать ранее полученный результат (файл `out_block_ranked_plingo`)",
+    ),
 ):
+    if use_previous and out_block_ranked_plingo.exists():
+        logger.warning(
+            f"Использую ранее выведенный результат plingo: {out_block_ranked_plingo}."
+        )
+        return
+
     logger.info("Подготовка модели plingo")
     generate_asp_evidence(block_features_path, out_evidence_path)
     logger.info(f"Сгенерирован файл с данными plingo {out_evidence_path}")
@@ -324,32 +336,6 @@ def main(
     df = df.dropna().sort_values("p_success_plingo", ascending=False)
     df.to_csv(out_block_ranked_plingo, index=False, encoding="utf-8")
     logger.info(f"Число записей: {len(df)}")
-
-    # blocks = extract_blocks(str(out_evidence_path))
-    # logger.info(f"Число блоков: {len(blocks)}")
-
-    # rows = []
-
-    # for i, b in tqdm(enumerate(blocks, 1), desc="Анализ блоков"):
-
-    #     # for i, b in enumerate(blocks, 1):
-    #     try:
-    #         p = run_one_query(b, model_lpmln_path, out_evidence_path)
-    #     except Exception as e:
-    #         print(f"[{i}/{len(blocks)}] {b}: ERROR {e}")
-    #         p = float("nan")
-    #     rows.append((b, p))
-    #     if i % 50 == 0:
-    #         print(f"Done {i}/{len(blocks)}")
-
-    #     break
-
-    # df = pd.DataFrame(rows, columns=["block_id", "p_success_plingo"])
-    # df = df.dropna().sort_values("p_success_plingo", ascending=False)
-    # df.to_csv(out_block_ranked_plingo, index=False, encoding="utf-8")
-    # logger.info(f"Запись {out_block_ranked_plingo}")
-    # logger.info(f"Число записей: {len(df)}")
-
     logger.success("Вывод plingo выполнен успешно!")
 
 
