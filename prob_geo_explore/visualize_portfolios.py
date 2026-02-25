@@ -97,9 +97,9 @@ def plot_lift_all_methods(
     #     label=f"Base rate ({base_rate:.3f})",
     # )
 
-    plt.xlabel("K (top-ranked blocks)")
-    plt.ylabel("Post-T0 discovery rate")
-    plt.title("Lift curves: ProbLog vs MLN vs plingo")
+    plt.xlabel("Топ-K блоков")
+    plt.ylabel("Доля открытй после T0")
+    plt.title("Кривые концентрации успеха")
     plt.legend()
     plt.tight_layout()
     plt.savefig(out_png, dpi=300)
@@ -181,7 +181,7 @@ def main(
     plt.xticks(range(len(pivot.columns)), pivot.columns)  # type: ignore
     plt.yticks(range(len(pivot.index)), pivot.index)  # type: ignore
     plt.colorbar()
-    plt.title("Portfolio overlap (Jaccard similarity)")
+    plt.title("Перекрытие портфелей (коэффициент Жаккара)")
     plt.tight_layout()
     plt.savefig(
         PROCESSED_DATA_DIR / "fig_portfolio_overlap_heatmap.png", dpi=300

@@ -79,13 +79,13 @@ def main(
     # 1) Distributions
     plt.figure()
     plt.hist(df["p_success"], bins=40, alpha=0.6, label="ProbLog")
-    plt.hist(df["p_success_mln"], bins=40, alpha=0.6, label="MLN (logistic)")
+    plt.hist(df["p_success_mln"], bins=40, alpha=0.6, label="MLN")
     plt.hist(
         df["p_success_plingo"], bins=40, alpha=0.6, label="plingo (LPMLN)"
     )
-    plt.xlabel("Probability")
-    plt.ylabel("Number of blocks")
-    plt.title("Probability distribution: ProbLog vs MLN vs plingo")
+    plt.xlabel("Вероятность")
+    plt.ylabel("Число блоков")
+    plt.title("Распределение вероятностей")
     plt.legend()
     plt.tight_layout()
     plt.savefig(fig_dist, dpi=300)
@@ -105,11 +105,11 @@ def main(
 
     plt.figure()
     plt.plot(p_problog.index + 1, p_problog, label="ProbLog")
-    plt.plot(p_mln.index + 1, p_mln, label="MLN (logistic)")
+    plt.plot(p_mln.index + 1, p_mln, label="MLN")
     plt.plot(p_plingo.index + 1, p_plingo, label="plingo (LPMLN)")
-    plt.xlabel("Rank")
-    plt.ylabel("Probability")
-    plt.title("Ranking curves: ProbLog vs MLN vs plingo")
+    plt.xlabel("Ранг")
+    plt.ylabel("Вероятность")
+    plt.title("Кривые ранжирования")
     plt.legend()
     plt.tight_layout()
     plt.savefig(fig_rank, dpi=300)
